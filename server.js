@@ -5,7 +5,6 @@ var fs = require('fs');
 var mongoose = require('mongoose');
 var passport = require('passport');
 var config = require('./config/config');
-require("./redis")
 
 var port = process.env.PORT || 8080; // set our port
 // Connect to mongodb
@@ -20,12 +19,7 @@ var response = {
 	userMessage: '',
 	errors: null
 };
-//client.set("foo_rand000000000000", "OK");
- 
-// This will return a JavaScript String
-// redis.get("foo_rand000000000000", function (err, reply) {
-//     console.log('reply',reply.toString()); // Will print `OK`
-// });
+
 mongoose.connection.on('error', console.log);
 mongoose.connection.on('disconnected', connect);
 
@@ -39,6 +33,39 @@ require('./config/express')(app);
 var router = express.Router();
 require('./config/routes')(router);
 app.use('/api', router);
+
+var User = mongoose.model('User');
+
+function createAdmin(){
+  	User.findOne({
+      username: 'admin'
+    }, function(err, user) {
+      if (err){
+          console.log('error occured',err)
+        } 
+        else if (user) {
+          console.log("user exist");
+        }
+        else{
+          console.log("user does not exist");
+          var newUser = new User({
+            username: 'admin',
+            password: 'admin'
+          });
+          newUser.save(function(err, user) {
+            if (err) {
+              console.log('error occured in saving user to db',err)
+            }
+            else {
+              console.log('admin created')
+            }
+          });
+        }
+    });
+}
+
 app.listen(port,() => console.log('Listening on port ' + port))
+
+createAdmin();
 
 module.exports = app;

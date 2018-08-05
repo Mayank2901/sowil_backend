@@ -1,6 +1,7 @@
+var mongoose = require('mongoose');
 var User = mongoose.model('User');
 var session = {};
-var redis = require("./redis")
+var redis = require("../redis")
 
 var response = {
 	error:false,

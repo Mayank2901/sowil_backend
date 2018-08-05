@@ -6,6 +6,7 @@ redis_client.on('connect', () => {
 });
 redis_client.on('error', err => {
     console.log('Error:',err);
+    var redis_client = redis.createClient("redis://localhost:6379/1");
 });
 
 module.exports = redis_client
