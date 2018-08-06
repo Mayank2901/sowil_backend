@@ -1,6 +1,7 @@
 var express = require('express')
 require('dotenv').config()
 var app = express()
+var server = require('http').createServer(app);
 var fs = require('fs');
 var mongoose = require('mongoose');
 var passport = require('passport');
@@ -26,6 +27,12 @@ mongoose.connection.on('disconnected', connect);
 // Bootstrap models
 fs.readdirSync(__dirname + '/models').forEach(function(file) {
 	if (~file.indexOf('.js')) require(__dirname + '/models/' + file);
+});
+
+var io = require('socket.io')(server);
+
+fs.readdirSync(__dirname + '/socket').forEach(function(file) {
+	if (~file.indexOf('.js')) require(__dirname + '/socket/' + file)(io);
 });
 
 require('./config/express')(app);
