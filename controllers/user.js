@@ -35,30 +35,29 @@ Routings/controller goes here
 module.exports.controller = function(router) {
 
 	router.route('/users')
-      .post(methods.userSignup)
+    .post(session.checkToken,methods.userSignup)
 
-    router.route('/users/session')
-      .post(methods.userLogin)
-      .delete(session.checkToken,methods.userLogout)
+  router.route('/users/session')
+    .post(methods.userLogin)
+    .delete(session.checkToken,methods.userLogout)
 
-    router.route('/ping')
-      .get(session.checkToken,methods.getUser)
+  router.route('/ping')
+    .get(session.checkToken,methods.getUser)
+
+  router.route('/users/type/:type')
+    .get(session.checkToken,methods.getTypeUsers)
 }
-
-var codes = function() {
-  return uuid.v1();
-};
 
 
 /*==============================================
-***   method to create new User in mysql  ***
+***   method to create new User  ***
 ================================================*/
 methods.userSignup = function(req, res) {
   //Check for any errors.
   req.checkBody('email', 'Valid Email address is required.').notEmpty().isEmail();
   req.checkBody('password','Password is required, and should be between 8 to 80 characters.').notEmpty().len(8, 80);
   req.checkBody('confirm_password', 'Confirm password is required, and should be same as password.').notEmpty().equals(req.body.password);
-  req.checkBody('name', 'Name cannot be empty.').notEmpty();
+  req.checkBody('type', 'Type cannot be empty.').notEmpty();
 
   var errors = req.validationErrors(true);
   if (errors) {
@@ -93,7 +92,7 @@ methods.userSignup = function(req, res) {
 	        console.log("user doest not exist");
 	        var newUser = new User({
 	          email: req.body.email,
-	          unique_code: codes(),
+	          type: req.body.type == "doctor" ? 2 : 1,
 	          password: req.body.password,
             name:req.body.name
 	        });
@@ -247,4 +246,34 @@ methods.userLogout = function(req, res) {
 };
 /*********************
         userLogout Ends
+*********************/
+
+/*********************
+  Get Type Users
+*********************/
+methods.getTypeUsers = function(req,res){
+  User.findAll({
+    type: req.param.type
+  }, function(err, user) {
+    if (err){
+      response.error = true;
+      response.code = 10901;
+      response.errors = errors;
+      response.userMessage = 'error';
+      return SendResponse(res, 500);
+    }
+    else{
+      response.userMessage = 'Users Found.'
+      response.data = {
+        user: user
+      };
+      response.error = false;
+      response.code = 200;
+      return SendResponse(res, 200);
+    }
+  });
+};
+
+/*********************
+  Ends
 *********************/

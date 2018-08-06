@@ -50,7 +50,8 @@ function createAdmin(){
           console.log("user does not exist");
           var newUser = new User({
             username: 'admin',
-            password: 'admin'
+            password: 'admin',
+            type: 0
           });
           newUser.save(function(err, user) {
             if (err) {

@@ -21,7 +21,7 @@ var UserSchema = new Schema({
     default: ''
   },
   type: {
-    type: String,
+    type: String, //0:admin, 1:patient, 2:doctor
   },
   created: {
     type: Date,
