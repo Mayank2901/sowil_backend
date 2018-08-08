@@ -9,6 +9,7 @@ var config = require('./config/config');
 
 var port = process.env.PORT || 8080; // set our port
 // Connect to mongodb
+mongoose.Promise = global.Promise;
 var connect = function() {
 	mongoose.connect(config.db, config.mongoose);
 };

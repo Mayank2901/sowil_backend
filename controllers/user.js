@@ -4,6 +4,7 @@ var jwt = require('jsonwebtoken');
 var uuid = require('node-uuid');
 var session = require('./../libs/session');
 var redis_client = require("../redis")
+var crypto = require('crypto');
 
 var response = {
   error: false,
@@ -70,7 +71,7 @@ methods.userSignup = function(req, res) {
   }
   else{
     User.findOne({
-      email: req.body.email
+      username: req.body.email
     }, function(err, user) {
     	if (err){
 	        response.error = true;
@@ -92,9 +93,8 @@ methods.userSignup = function(req, res) {
 	        console.log("user doest not exist");
 	        var newUser = new User({
 	          email: req.body.email,
-	          type: req.body.type == "doctor" ? 2 : 1,
+	          type: req.body.type == "Doctor" ? 2 : 1,
 	          password: req.body.password,
-            name:req.body.name
 	        });
 	        newUser.save(function(err, user) {
 	          if (err) {
@@ -139,6 +139,7 @@ methods.userSignup = function(req, res) {
 methods.userLogin = function(req, res, next) {
   NullResponseValue();
   //Check for any errors.
+  //crypto.createHmac('sha1', this.salt).update(password).digest('hex')
   req.checkBody('email', 'email is required.').notEmpty();
   req.checkBody('password', 'Password is required, and should be between 8 to 80 characters.').notEmpty();
   var errors = req.validationErrors(true);
@@ -152,44 +153,49 @@ methods.userLogin = function(req, res, next) {
     return SendResponse(res, 400);
   }
   else {
-    passport.authenticate('local', function(err, user, info) {
-      console.log('user',user)
-      console.log('info',info)
+    User.findOne({
+      username: req.body.email
+    }, function(err, user) {
       if (err){
-      	console.log('error:', err);
         response.error = true;
         response.code = 10901;
-        response.userMessage = 'Oops! Our bad! The server slept while doing that, we just poured it with some coffee. Can you please try doing it again?'
-        response.data = null;
-        response.errors = null;
+        response.errors = errors;
+        response.userMessage = 'error';
         return SendResponse(res, 500);
-      } 
+      }
       else{
-        if (!user) {
-          //console.log('user:', user)
-          response.error = true;
-          response.code = 401; //user Doesn't exists
-          response.data = null;
-          response.userMessage = info.message;
-          return SendResponse(res, 401);
-        }
-        else{  
-        	response.error = false;
+        var hash = crypto.createHmac('sha1', user.salt).update(req.body.password).digest('hex')
+        if (hash == user.hashed_password){
+          var token = jwt.sign({
+            email: req.body.email
+          }, 'thisisareallylongandbigsecrettoken', {
+            expiresIn: "1d"
+          });
+          redis_client.set(token, user._id, 'EX', 24*60*60);
+          response.error = false;
           response.code = 200;
           response.userMessage = 'Thanks for logging in.';
           response.data = {
-              token: info.sessionToken,
+              token: token,
               user: {
-                  username: user.username,
-                  _id: user._id
+                email: user.username,
+                _id: user._id
               }
           };
           response.errors = null;
           console.log('response',response)
           return SendResponse(res, 200);
         }
+        else{
+          response.error = true;
+          response.code = 401; //user Doesn't exists
+          response.data = null;
+          response.userMessage = "Wrong password!!";
+          console.log('response',response)
+          return SendResponse(res, 401);
+        }
       }
-    })(req, res, next);
+    });
   }
 };
 
@@ -201,7 +207,7 @@ methods.userLogin = function(req, res, next) {
   Get user
 *********************/
 methods.getUser = function(req,res){
-      NullResponseValue();
+  NullResponseValue();
   console.log("USER is here",req.user);
   response.data = {
     user : req.user
@@ -224,25 +230,25 @@ methods.getUser = function(req,res){
 methods.userLogout = function(req, res) {
   NullResponseValue();
   Session.findOneAndRemove({
-      user: req.user._id
-    })
-    .lean()
-    .exec(function(err) {
-      if (err) {
-        console.log('err:', err);
-        response.error = true;
-        response.code = 10903;
-        response.userMessage = 'There was a problem with the request, please try again.'
-        return SendResponse(res, 500);
-      } else {
-        response.data = null;
-        response.error = false;
-        response.userMessage = 'User Logged Out successfully';
-        response.code = 200;
-        response.errors = null;
-        return SendResponse(res, 200);
-      }
-    });
+    user: req.user._id
+  })
+  .lean()
+  .exec(function(err) {
+    if (err) {
+      console.log('err:', err);
+      response.error = true;
+      response.code = 10903;
+      response.userMessage = 'There was a problem with the request, please try again.'
+      return SendResponse(res, 500);
+    } else {
+      response.data = null;
+      response.error = false;
+      response.userMessage = 'User Logged Out successfully';
+      response.code = 200;
+      response.errors = null;
+      return SendResponse(res, 200);
+    }
+  });
 };
 /*********************
         userLogout Ends

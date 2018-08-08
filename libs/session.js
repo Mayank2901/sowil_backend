@@ -39,7 +39,8 @@ session.checkToken = function(req,res,next){
 			return SendResponse(res,500);
 		}
 		else{
-			if(data)
+			console.log('reply',reply)
+			if(reply)
 			{ 	// Horray!! Your session exists.
 				//find user in mongo
 				User
@@ -54,8 +55,12 @@ session.checkToken = function(req,res,next){
 						return SendResponse(res,500);
 					}
 					else{
-						req.user = data.user;
-						console.log("user",req.user);
+						req.user = {
+							username: data.username,
+							_id: data._id,
+							type: data.type,
+						};
+						console.log("user",req.user,data);
 						return next();
 					}
 				});
@@ -100,7 +105,7 @@ session.checkAdmin = function(req,res,next){
 			return SendResponse(res,500);
 		}
 		else{
-			if(data){
+			if(reply){
 				// Horray!! Your session exists.
 				//find user in mongo
 				User
@@ -115,8 +120,9 @@ session.checkAdmin = function(req,res,next){
 						return SendResponse(res,500);
 					}
 					else{
+						console.log('data',data)
 						req.user = data.user;
-						if(data.user.type == 0){
+						if(data.type == 0){
 							return next();
 						}
 						else{
