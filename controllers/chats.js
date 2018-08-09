@@ -2,6 +2,7 @@ var mongoose = require('mongoose');
 var Conversation = mongoose.model('Conversation');
 var Message = mongoose.model('Message');
 var session = require('./../libs/session');
+var async = require("async");
 
 var response = {
   error: false,
@@ -46,21 +47,23 @@ module.exports.controller = function(router) {
 methods.getchats = function(req, res) {
   
   Conversation.find({ participants: req.user._id })
-  .select('_id')
+  .populate({ path: 'participants', select: 'username' })
   .exec(function(err, conversations) {
+    console.log('data',err,conversations,conversations[0].participants)
     if (err) {
       res.send({ error: err });
       return next(err);
     }
-
     // Set up empty array to hold conversations + most recent message
     let fullConversations = [];
-    conversations.forEach(function(conversation) {
+    async.each(conversations, (conversation, callback) => {
       Message.find({ 'conversationId': conversation._id })
       .sort('-createdAt')
       .limit(1)
-      .populate('user',{username:true})
+      .lean()
+      .populate('author',{username:true})
       .exec(function(err, message) {
+        console.log('message',err,message)
         if (err) {
           response.error = true;
           response.code = 500;
@@ -68,22 +71,31 @@ methods.getchats = function(req, res) {
           response.data = null
           response.errors = err;
           console.log('err',response)
-          return SendResponse(res, 500);
+          return callback(response);
         }
-        fullConversations.push(message);
-        if(fullConversations.length === conversations.length) {
-          response.error = false;
-          response.code = 200;
-          response.userMessage = 'Conversations';
-          response.data = { conversations: fullConversations }
-          response.errors = null;
-          console.log('response',response)
-          return SendResponse(res, 200);
+        else{
+          message[0].conversation = conversation
+          fullConversations.push(message);
+          if(fullConversations.length === conversations.length) {
+            response.error = false;
+            response.code = 200;
+            response.userMessage = 'Conversations';
+            console.log('fullConversations',fullConversations)
+            response.data = { conversations: fullConversations }
+            response.errors = null;
+            console.log('response',response)
+            // return callback(response);
+            return SendResponse(res, 200);
+          }
         }
       });
+    }, function(err) {
+      // if any of the file processing produced an error, err would equal that error
+      if( err ) {
+        return SendResponse(res, 500);
+      } 
     });
-  });
-
+  })
 };
 /*********************
   Ends

@@ -1,7 +1,7 @@
 var express = require('express')
 require('dotenv').config()
 var app = express()
-var server = require('http').createServer(app);
+var server = require('http').Server(app);
 var fs = require('fs');
 var mongoose = require('mongoose');
 var passport = require('passport');
@@ -30,7 +30,10 @@ fs.readdirSync(__dirname + '/models').forEach(function(file) {
 	if (~file.indexOf('.js')) require(__dirname + '/models/' + file);
 });
 
-var io = require('socket.io')(server);
+var io = require('socket.io')(server, {
+	origin: 'http://localhost:3000'
+});
+io.set('transports', ['websocket'])
 
 fs.readdirSync(__dirname + '/socket').forEach(function(file) {
 	if (~file.indexOf('.js')) require(__dirname + '/socket/' + file)(io);
@@ -73,7 +76,7 @@ function createAdmin(){
     });
 }
 
-app.listen(port,() => console.log('Listening on port ' + port))
+server.listen(port,() => console.log('Listening on port ' + port))
 
 createAdmin();
 
