@@ -75,7 +75,7 @@ methods.getchats = function(req, res) {
         }
         else{
           message[0].conversation = conversation
-          fullConversations.push(message);
+          fullConversations.push(message[0]);
           if(fullConversations.length === conversations.length) {
             response.error = false;
             response.code = 200;
@@ -106,13 +106,9 @@ methods.getchats = function(req, res) {
 ================================================*/
 methods.getchat = function(req, res) {
   
-  Message.find({ conversationId: req.params.chat_id })
+  Message.find({ 'conversationId': req.params.chat_id })
   .select('createdAt body author')
   .sort('-createdAt')
-  .populate({
-    path: 'author',
-    select: 'profile.firstName profile.lastName'
-  })
   .exec(function(err, messages) {
     if (err) {
       response.error = true;

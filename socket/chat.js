@@ -108,13 +108,13 @@ module.exports = function(io) {
 						});
 					}
 					else{
-						const reply = new Message({
-						    conversationId: req.params.conversationId,
-						    body: req.body.composedMessage,
-						    author: req.user._id
+						const reply2 = new Message({
+						    conversationId: data.conversationId,
+						    body: data.composedMessage,
+						    author: reply
 						});
 
-						reply.save(function(err, sentReply) {
+						reply2.save(function(err, sentReply) {
 						    if (err) {
 						    	response.error = true;
 						        response.code = 500;
@@ -128,9 +128,9 @@ module.exports = function(io) {
 						    	response.error = false;
 						        response.code = 200;
 						        response.userMessage = 'Reply successfully sent!';
-						        response.data = null
+						        response.data = sentReply
 						        response.errors = null;
-						        console.log('response',response)
+						        console.log('response',response,sentReply)
 						        socket.emit('msg_success',response)
 							}
 						});
