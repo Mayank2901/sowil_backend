@@ -30,6 +30,7 @@ var SendResponse = function(res, status) {
 module.exports = function(io) {
 	io.on('connection', function(socket){
 		console.log("connected")
+		socket.emit('pong', {"data": "ping"})
 		socket.on('message', function(data){
 			console.log('data',data)
 			redis.get(data.token, function (err, reply) {
@@ -46,6 +47,7 @@ module.exports = function(io) {
 					if(data.new_message){
 						User
 						.findOne({username:data.recipient})
+						.select('_id username')
 						.lean()
 						.exec(function(err,user){
 							if(err){
@@ -56,7 +58,7 @@ module.exports = function(io) {
 						        response.data = null
 						        response.errors = null;
 						        console.log('err',response)
-						        socket.emit('msg_err',response);
+						        io.socket.emit('msg_err',response);
 							}
 							else{
 								console.log('chat user',data,user)
@@ -72,13 +74,14 @@ module.exports = function(io) {
 								        response.data = null
 								        response.errors = null;
 								        console.log('err',response)
-								        socket.emit('msg_err',response)
+								        io.socket.emit('msg_err',response)
 								    }
 
 								    const message = new Message({
 								      conversationId: newConversation._id,
 								      body: data.composedMessage,
-								      author: data._id
+								      author: data._id,
+								      read: false
 								    });
 
 								    message.save(function(err, newMessage) {
@@ -92,15 +95,19 @@ module.exports = function(io) {
 									        socket.emit('msg_err',response)
 								      	}
 								      	else{
+								      		//var msg = newMessage.toJSON();
+								      		//msg.
 								      		response.error = false;
 									        response.code = 200;
 									        response.userMessage = 'Conversation started!';
 									        response.data = {
-									        	conversationId: conversation._id
+									        	conversationId: conversation._id,
+									        	message : newMessage,
+									        	user : user
 									        };
 									        response.errors = null;
 									        console.log('response',response)
-									        socket.emit('msg_success',response)
+									        io.socket.emit('msg_recieved',response)
 									    }
 								    });
 								});
@@ -111,7 +118,8 @@ module.exports = function(io) {
 						const reply2 = new Message({
 						    conversationId: data.conversationId,
 						    body: data.composedMessage,
-						    author: reply
+						    author: reply,
+						    read: false
 						});
 
 						reply2.save(function(err, sentReply) {
@@ -125,13 +133,15 @@ module.exports = function(io) {
 						        socket.emit('msg_err',response)
 						    }
 						    else{
+						    	var reply = sentReply.toJSON();
+						    	reply.recipient = data.recipient
 						    	response.error = false;
 						        response.code = 200;
 						        response.userMessage = 'Reply successfully sent!';
-						        response.data = sentReply
+						        response.data = reply
 						        response.errors = null;
 						        console.log('response',response,sentReply)
-						        socket.emit('msg_success',response)
+						        io.sockets.emit('msg_recieved',response)
 							}
 						});
 					}

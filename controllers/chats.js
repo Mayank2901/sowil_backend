@@ -35,6 +35,7 @@ module.exports.controller = function(router) {
 
 	router.route('/chats')
     .get(session.checkToken,methods.getchats)
+    .put(session.checkToken,methods.updatechats)
 
   router.route('/chat/:chat_id')
     .get(session.checkToken,methods.getchat)
@@ -102,12 +103,45 @@ methods.getchats = function(req, res) {
 *********************/
 
 /*==============================================
+***   method to update user chat  ***
+================================================*/
+methods.updatechats = function(req, res) {
+  console.log('msgs',req.body.msgs)
+  var criteria = {
+   _id:{ $in: req.body.msgs}
+  };
+  update = {$set : {read : true}}
+  Message.update(criteria, update , { multi: true }, function(err, message) {
+    if (err){
+        response.error = true;
+        response.code = 10901;
+        response.errors = errors;
+        response.userMessage = 'error';
+        console.log('err',err)
+        return SendResponse(res, 500);
+      }
+      else{
+        response.userMessage = 'Message Updated.'
+        response.data = message;
+        response.error = false;
+        response.code = 200;
+        console.log('response',response)
+        return SendResponse(res, 200);
+      }
+  });
+};
+/*********************
+  Ends
+*********************/
+
+
+/*==============================================
 ***   method to get particular user chat  ***
 ================================================*/
 methods.getchat = function(req, res) {
   
   Message.find({ 'conversationId': req.params.chat_id })
-  .select('createdAt body author')
+  .select('createdAt body author read')
   .sort('-createdAt')
   .exec(function(err, messages) {
     if (err) {
