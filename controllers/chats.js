@@ -52,8 +52,12 @@ methods.getchats = function(req, res) {
   .exec(function(err, conversations) {
     console.log('data',err,conversations,conversations[0].participants)
     if (err) {
-      res.send({ error: err });
-      return next(err);
+      response.error = true;
+      response.code = 500;
+      response.userMessage = 'Error Occured';
+      response.data = null
+      response.errors = err;
+      console.log('err',response)
     }
     // Set up empty array to hold conversations + most recent message
     let fullConversations = [];
