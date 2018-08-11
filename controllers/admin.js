@@ -139,9 +139,10 @@ methods.editUser = function(req, res) {
   }, update, {new : true}, function(err, user) {
     if (err){
         response.error = true;
-        response.code = 10901;
-        response.errors = errors;
-        response.userMessage = 'error';
+        response.code = 500;
+        response.errors = err;
+        response.data = null
+        response.userMessage = 'An error occured during updation.';
         return SendResponse(res, 500);
       }
       else{
@@ -152,6 +153,7 @@ methods.editUser = function(req, res) {
             email: user.email
           }
         };
+        response.errors = null;
         response.error = false;
         response.code = 200;
         return SendResponse(res, 200);
@@ -174,7 +176,7 @@ methods.getUsers = function(req, res) {
     if (err){
       response.error = true;
       response.code = 10901;
-      response.errors = errors;
+      response.errors = err;
       response.userMessage = 'error';
       return SendResponse(res, 500);
     }
@@ -207,6 +209,7 @@ methods.deleteUser = function(req, res) {
       console.log('err:', err);
       response.error = true;
       response.code = 500;
+      response.data = null
       response.userMessage = 'There was a problem with the request, please try again.'
       response.errors = err;
       return SendResponse(res, 500);

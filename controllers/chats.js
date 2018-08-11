@@ -117,21 +117,21 @@ methods.updatechats = function(req, res) {
   update = {$set : {read : true}}
   Message.update(criteria, update , { multi: true }, function(err, message) {
     if (err){
-        response.error = true;
-        response.code = 10901;
-        response.errors = errors;
-        response.userMessage = 'error';
-        console.log('err',err)
-        return SendResponse(res, 500);
-      }
-      else{
-        response.userMessage = 'Message Updated.'
-        response.data = message;
-        response.error = false;
-        response.code = 200;
-        console.log('response',response)
-        return SendResponse(res, 200);
-      }
+      response.error = true;
+      response.code = 500;
+      response.errors = errors;
+      response.userMessage = 'error';
+      console.log('err',err)
+      return SendResponse(res, 500);
+    }
+    else{
+      response.userMessage = 'Message Updated.'
+      response.data = message;
+      response.error = false;
+      response.code = 200;
+      console.log('response',response)
+      return SendResponse(res, 200);
+    }
   });
 };
 /*********************

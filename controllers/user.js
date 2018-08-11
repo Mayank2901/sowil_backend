@@ -75,7 +75,7 @@ methods.userSignup = function(req, res) {
     }, function(err, user) {
     	if (err){
 	        response.error = true;
-	        response.code = 10901;
+	        response.code = 500;
 	        response.errors = errors;
 	        response.userMessage = 'error';
 	        return SendResponse(res, 500);
@@ -83,7 +83,7 @@ methods.userSignup = function(req, res) {
       	else if (user) {
 	        console.log("email exist");
 	        response.error = true;
-	        response.code = 10901;
+	        response.code = 409;
 	        response.userMessage = 'Email already in use.'
 	        response.data = null;
 	        response.errors = null;
@@ -99,10 +99,10 @@ methods.userSignup = function(req, res) {
 	        newUser.save(function(err, user) {
 	          if (err) {
 	            response.error = true;
-	            response.code = 10800;
+	            response.code = 400;
 	            response.userMessage = 'Could not save user to database'
 	            response.data = null;
-	            response.errors = null;
+	            response.errors = err;
 	            return SendResponse(res, 400);
 	          }
 	          else {
@@ -158,7 +158,7 @@ methods.userLogin = function(req, res, next) {
     }, function(err, user) {
       if (err){
         response.error = true;
-        response.code = 10901;
+        response.code = 500;
         response.errors = errors;
         response.userMessage = 'error';
         return SendResponse(res, 500);
@@ -236,7 +236,7 @@ methods.userLogout = function(req, res) {
     if (err) {
       console.log('err:', err);
       response.error = true;
-      response.code = 10903;
+      response.code = 500;
       response.userMessage = 'There was a problem with the request, please try again.'
       return SendResponse(res, 500);
     } else {
@@ -262,7 +262,7 @@ methods.getTypeUsers = function(req,res){
   }, function(err, user) {
     if (err){
       response.error = true;
-      response.code = 10901;
+      response.code = 500;
       response.errors = errors;
       response.userMessage = 'error';
       return SendResponse(res, 500);
