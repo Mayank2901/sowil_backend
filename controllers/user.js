@@ -179,7 +179,8 @@ methods.userLogin = function(req, res, next) {
               token: token,
               user: {
                 email: user.username,
-                _id: user._id
+                _id: user._id,
+                type: user.type
               }
           };
           response.errors = null;
@@ -229,11 +230,9 @@ methods.getUser = function(req,res){
 *********************/
 methods.userLogout = function(req, res) {
   NullResponseValue();
-  Session.findOneAndRemove({
-    user: req.user._id
-  })
-  .lean()
-  .exec(function(err) {
+  console.log('token',req.token)
+  redis_client.del(req.token,function(err,reply){
+    console.log('data',err,reply)
     if (err) {
       console.log('err:', err);
       response.error = true;
@@ -248,7 +247,7 @@ methods.userLogout = function(req, res) {
       response.errors = null;
       return SendResponse(res, 200);
     }
-  });
+  })
 };
 /*********************
         userLogout Ends
@@ -258,8 +257,8 @@ methods.userLogout = function(req, res) {
   Get Type Users
 *********************/
 methods.getTypeUsers = function(req,res){
-  User.findAll({
-    type: req.param.type
+  User.find({
+    type: req.params.type
   }, function(err, user) {
     if (err){
       response.error = true;
