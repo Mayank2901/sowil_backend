@@ -20,3 +20,14 @@ Test your API using [Postman](https://chrome.google.com/webstore/detail/postman-
 
  - run `npm start` from the home directory.
  - Listening on port 8080
+
+ ## Approach
+
+ - Users i.e (Doctor and patients can only be created by Admin.)
+ - Admin login is username - admin and password - admin
+ - Chats are created using Socket.io(socket folder)
+ - User Data is stored in MongoDB(models folder)
+ - Session Management is done in Redis(redis file)
+ - User's and Admin Api's are inside controllers folder.
+ - Session file is in Libs folder.
+ - Execution starts from server.js file

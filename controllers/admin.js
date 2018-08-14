@@ -4,6 +4,8 @@ var jwt = require('jsonwebtoken');
 var uuid = require('node-uuid');
 var session = require('./../libs/session');
 var redis_client = require("../redis")
+var Conversation = mongoose.model('Conversation');
+var async = require("async");
 
 var response = {
   error: false,
@@ -200,26 +202,92 @@ methods.getUsers = function(req, res) {
 ================================================*/
 methods.deleteUser = function(req, res) {
   console.log('id',req.body.id)
-  User.findOneAndRemove({
-    _id: req.body.id
-  })
-  .lean()
-  .exec(function(err) {
+  Conversation.find({ participants: req.body.id })
+  .populate({ path: 'participants', select: 'username' })
+  .exec(function(err, conversations) {
+    console.log('data',err,conversations)
     if (err) {
-      console.log('err:', err);
       response.error = true;
       response.code = 500;
+      response.userMessage = 'Error Occured';
       response.data = null
-      response.userMessage = 'There was a problem with the request, please try again.'
       response.errors = err;
-      return SendResponse(res, 500);
-    } else {
-      response.data = null;
-      response.error = false;
-      response.userMessage = 'User Deleted successfully';
-      response.code = 200;
-      response.errors = null;
-      return SendResponse(res, 200);
+      console.log('err',response)
+    }
+    // Set up empty array to hold conversations + most recent message
+    else if(conversations.length == 0){
+      User.findOneAndRemove({
+        _id: req.body.id
+      })
+      .lean()
+      .exec(function(err) {
+        if (err) {
+          console.log('err:', err);
+          response.error = true;
+          response.code = 500;
+          response.data = null
+          response.userMessage = 'There was a problem with the request, please try again.'
+          response.errors = err;
+          return SendResponse(res, 500);
+        } else {
+          response.data = null;
+          response.error = false;
+          response.userMessage = 'User Deleted successfully';
+          response.code = 200;
+          response.errors = null;
+          return SendResponse(res, 200);
+        }
+      });
+    }
+    else{
+      let fullConversations = [];
+      async.each(conversations, (conversation, callback) => {
+        Conversation.findOneAndRemove({ _id: conversation._id })
+        .lean()
+        .exec(function(err) {
+          fullConversations.push(conversation._id)
+          if (err) {
+            response.error = true;
+            response.code = 500;
+            response.userMessage = 'Error Occured';
+            response.data = null
+            response.errors = err;
+            console.log('err',response)
+            return callback(response);
+          }
+          else{
+            if(fullConversations.length === conversations.length) {
+              User.findOneAndRemove({
+                _id: req.body.id
+              })
+              .lean()
+              .exec(function(err) {
+                if (err) {
+                  console.log('err:', err);
+                  response.error = true;
+                  response.code = 500;
+                  response.data = null
+                  response.userMessage = 'There was a problem with the request, please try again.'
+                  response.errors = err;
+                  return SendResponse(res, 500);
+                } else {
+                  response.data = null;
+                  response.error = false;
+                  response.userMessage = 'User Deleted successfully';
+                  response.code = 200;
+                  response.errors = null;
+                  return SendResponse(res, 200);
+                }
+              });
+            }
+          }
+        });
+      }, function(err) {
+        // if any of the file processing produced an error, err would equal that error
+        if( err ) {
+          return SendResponse(res, 500);
+        } 
+      });
     }
   });
 };

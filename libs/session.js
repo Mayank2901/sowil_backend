@@ -55,13 +55,13 @@ session.checkToken = function(req,res,next){
 						return SendResponse(res,500);
 					}
 					else{
+						console.log("user",req.user,data);
 						req.token = token
 						req.user = {
 							username: data.username,
 							_id: data._id,
 							type: data.type,
 						};
-						console.log("user",req.user,data);
 						return next();
 					}
 				});

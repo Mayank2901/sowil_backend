@@ -30,7 +30,6 @@ var SendResponse = function(res, status) {
 module.exports = function(io) {
 	io.on('connection', function(socket){
 		console.log("connected")
-		socket.emit('pong', {"data": "ping"})
 		socket.on('message', function(data){
 			console.log('data',data)
 			redis.get(data.token, function (err, reply) {
@@ -41,7 +40,7 @@ module.exports = function(io) {
 					response.userMessage = "There was a problem with the request, please try again."
 					response.data = null
 					response.errors = err
-					socket.emit('auth_err',response)
+					io.sockets.emit('auth_err',response)
 				}
 				else{
 					if(data.new_message){
@@ -58,7 +57,7 @@ module.exports = function(io) {
 						        response.data = null
 						        response.errors = null;
 						        console.log('err',response)
-						        io.socket.emit('msg_err',response);
+						        io.sockets.emit('msg_err',response);
 							}
 							else{
 								console.log('chat user',data,user,data._id)
@@ -72,9 +71,9 @@ module.exports = function(io) {
 								        response.data = null
 								        response.errors = null;
 								        console.log('err',response)
-								        io.socket.emit('msg_err',response)
+								        io.sockets.emit('msg_err',response)
 								    }
-								    else if(conversations){
+								    else if(conversations.length != 0){
 								    	const reply2 = new Message({
 										    conversationId: conversations[0]._id,
 										    body: data.composedMessage,
@@ -90,7 +89,7 @@ module.exports = function(io) {
 										        response.data = null
 										        response.errors = null;
 										        console.log('err',response)
-										        socket.emit('msg_err',response)
+										        io.socket.emit('msg_err',response)
 										    }
 										    else{
 										    	var reply = sentReply.toJSON();
@@ -118,7 +117,7 @@ module.exports = function(io) {
 										        response.data = null
 										        response.errors = null;
 										        console.log('err',response)
-										        io.socket.emit('msg_err',response)
+										        io.sockets.emit('msg_err',response)
 										    }
 
 										    const message = new Message({
@@ -136,22 +135,32 @@ module.exports = function(io) {
 											        response.data = null
 											        response.errors = null;
 											        console.log('err',response)
-											        socket.emit('msg_err',response)
+											        io.sockets.emit('msg_err',response)
 										      	}
 										      	else{
-										      		//var msg = newMessage.toJSON();
-										      		//msg.
+										      		console.log('newConversation',newConversation)
+										      		var newCon = newConversation.toJSON();
+										      		var msg = newMessage.toJSON();
+										      		console.log('msg',msg,newCon)
+										      		msg.conversation = newCon
+										      		msg.conversation.participants = [{_id: user._id, username: data.recipient},{_id : data._id,
+										      			username : data.username}]
+										      		msg.author = {
+										      			_id : data._id,
+										      			username : data.username
+										      		}
+										      		console.log('msg2',msg)
 										      		response.error = false;
 											        response.code = 200;
 											        response.userMessage = 'Conversation started!';
 											        response.data = {
 											        	conversationId: conversation._id,
-											        	message : newMessage,
+											        	message : msg,
 											        	user : user
 											        };
 											        response.errors = null;
 											        console.log('response',response)
-											        io.socket.emit('msg_recieved',response)
+											        io.sockets.emit('msg_recieved',response)
 											    }
 										    });
 										});
@@ -187,7 +196,7 @@ module.exports = function(io) {
 						        response.data = reply
 						        response.errors = null;
 						        console.log('response',response,sentReply)
-						        io.sockets.emit('msg_recieved',response)
+						        io.socket.emit('msg_recieved',response)
 							}
 						});
 					}

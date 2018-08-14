@@ -50,7 +50,7 @@ methods.getchats = function(req, res) {
   Conversation.find({ participants: req.user._id })
   .populate({ path: 'participants', select: 'username' })
   .exec(function(err, conversations) {
-    console.log('data',err,conversations,conversations[0].participants)
+    console.log('data',err,conversations)
     if (err) {
       response.error = true;
       response.code = 500;
@@ -60,6 +60,16 @@ methods.getchats = function(req, res) {
       console.log('err',response)
     }
     // Set up empty array to hold conversations + most recent message
+    if(conversations.length == 0){
+      response.error = false;
+      response.code = 200;
+      response.userMessage = 'Conversations';
+      response.data = { conversations: [] }
+      response.errors = null;
+      console.log('response',response)
+      // return callback(response);
+      return SendResponse(res, 200);
+    }
     let fullConversations = [];
     async.each(conversations, (conversation, callback) => {
       Message.find({ 'conversationId': conversation._id })
